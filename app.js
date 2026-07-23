@@ -132,23 +132,59 @@ initAIModels();
 // --- Image Loading ---
 
 function loadImage(url) {
-    img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.onload = async () => {
-        setupCanvases();
-        DOM.placeholder.classList.add('hidden');
-        DOM.canvasContainer.classList.add('has-image');
-        hasImage = true;
-        resetAdjustments();
+    const tempImg = new Image();
+    tempImg.crossOrigin = "Anonymous";
+    tempImg.onload = () => {
+        // Redimensionar imágenes enormes de móviles para no bloquear la IA ni la memoria
+        const MAX_SIZE = 1920;
+        let w = tempImg.width;
+        let h = tempImg.height;
         
-        // Reset crop box
-        DOM.cropOverlay.classList.add('hidden');
-        if (currentTool === 'crop') toggleTool('crop');
-        
-        if (aiLoaded) await analyzeImage();
-        applyAdjustments();
+        if (w > MAX_SIZE || h > MAX_SIZE) {
+            const ratio = Math.min(MAX_SIZE / w, MAX_SIZE / h);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const tCtx = canvas.getContext('2d');
+            tCtx.drawImage(tempImg, 0, 0, w, h);
+            
+            img = new Image();
+            img.onload = finishLoading;
+            img.src = canvas.toDataURL('image/jpeg', 0.9);
+        } else {
+            img = tempImg;
+            finishLoading();
+        }
     };
-    img.src = url;
+    tempImg.src = url;
+}
+
+async function finishLoading() {
+    setupCanvases();
+    DOM.placeholder.classList.add('hidden');
+    DOM.canvasContainer.classList.add('has-image');
+    hasImage = true;
+    resetAdjustments();
+    
+    // Reset crop box
+    DOM.cropOverlay.classList.add('hidden');
+    if (currentTool === 'crop') toggleTool('crop');
+    
+    if (aiLoaded) {
+        // Mostrar cargador y permitir que la interfaz se repinte antes de bloquear con IA
+        DOM.loadingOverlay.classList.remove('hidden');
+        DOM.loadingText.textContent = 'Analizando imagen...';
+        
+        setTimeout(async () => {
+            await analyzeImage();
+            applyAdjustments();
+        }, 50); // Dar 50ms a la pantalla para mostrar "Cargando..."
+    } else {
+        applyAdjustments();
+    }
 }
 
 DOM.upload.addEventListener('change', (e) => {
@@ -195,8 +231,6 @@ function setupCanvases() {
 // --- AI Processing ---
 async function analyzeImage() {
     if (!imageSegmenter || !faceLandmarker) return;
-    DOM.loadingOverlay.classList.remove('hidden');
-    DOM.loadingText.textContent = 'Analizando imagen...';
     
     try {
         const segResult = await imageSegmenter.segment(img);
@@ -210,6 +244,13 @@ async function analyzeImage() {
     
     DOM.loadingOverlay.classList.add('hidden');
 }
+
+// --- Splash Screen ---
+document.getElementById('splash-screen').addEventListener('click', function() {
+    this.style.opacity = '0';
+    this.style.pointerEvents = 'none';
+    setTimeout(() => this.classList.add('hidden'), 500);
+});
 
 // --- Image Processing (Filters) ---
 
