@@ -119,6 +119,36 @@ body {
     outline: none;
 }
 
+/* --- HISTORY ACTIONS --- */
+.history-actions {
+    display: flex;
+    gap: 8px;
+}
+.history-btn {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--text-main);
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    transition: transform 0.1s, opacity 0.2s;
+}
+.history-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+.history-btn:active:not(:disabled) {
+    transform: scale(0.9);
+}
+#btn-reset-img {
+    color: #ef4444;
+}
+
 /* --- WORKSPACE (CANVAS) --- */
 .workspace {
     flex: 1;

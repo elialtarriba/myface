@@ -1,4 +1,4 @@
-const CACHE_NAME = 'difuminar-v2';
+const CACHE_NAME = 'difuminar-v3';
 const ASSETS = [
     './',
     './index.html',

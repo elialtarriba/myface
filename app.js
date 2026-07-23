@@ -9,7 +9,18 @@ const DOM = {
     sBrightness: document.getElementById('adj-brightness'),
     sContrast: document.getElementById('adj-contrast'),
     sTemp: document.getElementById('adj-temperature'),
+    vTemp: document.getElementById('val-temperature'),
+    sBlackPoint: document.getElementById('adj-blackpoint'),
+    vBlackPoint: document.getElementById('val-blackpoint'),
+    sWhites: document.getElementById('adj-whites'),
+    vWhites: document.getElementById('val-whites'),
+    sClarity: document.getElementById('adj-clarity'),
+    vClarity: document.getElementById('val-clarity'),
+    sHaze: document.getElementById('adj-haze'),
+    vHaze: document.getElementById('val-haze'),
     sBW: document.getElementById('adj-bw'),
+    sBeauty: document.getElementById('ai-beauty'),
+    vBeauty: document.getElementById('val-beauty'),
     sWrinkles: document.getElementById('ai-wrinkles'),
     sBlur: document.getElementById('ai-blur'),
     sBrushSize: document.getElementById('brush-size'),
@@ -17,7 +28,6 @@ const DOM = {
     // Values displays
     vBrightness: document.getElementById('val-brightness'),
     vContrast: document.getElementById('val-contrast'),
-    vTemp: document.getElementById('val-temperature'),
     vWrinkles: document.getElementById('val-wrinkles'),
     vBlur: document.getElementById('val-blur'),
     vBrushSize: document.getElementById('val-brush-size'),
@@ -28,7 +38,6 @@ const DOM = {
     btnSave: document.getElementById('btn-save'),
     btnExit: document.getElementById('btn-exit'),
     btnClone: document.getElementById('tool-clone'),
-    btnIlluminate: document.getElementById('tool-illuminate'),
     btnCrop: document.getElementById('tool-crop'),
     
     // UI Elements
@@ -40,6 +49,11 @@ const DOM = {
     loadingText: document.getElementById('loading-text'),
     aiWarning: document.getElementById('ai-warning'),
     logoTitle: document.querySelector('.logo h1'),
+    historyActions: document.getElementById('history-actions'),
+    btnUndo: document.getElementById('btn-undo'),
+    btnRedo: document.getElementById('btn-redo'),
+    btnResetImg: document.getElementById('btn-reset-img'),
+    btnSetCloneSource: document.getElementById('btn-set-clone-source'),
     
     // Crop Elements
     cropOverlay: document.getElementById('crop-overlay'),
@@ -104,72 +118,79 @@ let img = new Image();
 let originalImageData = null;
 let currentImageData = null;
 let hasImage = false;
-
-// Tool state
-let currentTool = null; // 'clone', 'illuminate', 'crop', null
-let isDrawing = false;
-let cloneSource = null;
-let lastPointerPos = null;
-
-// Crop state
-let cropRect = { x: 0, y: 0, w: 100, h: 100 };
-let isDraggingCrop = false;
-let dragHandle = null; // 'box', 'top-left', 'bottom-right', etc.
-let cropDragStart = { x: 0, y: 0 };
-
-// AI Models
+let currentTool = null;
+let aiLoaded = false;
 let imageSegmenter = null;
 let faceLandmarker = null;
-let aiMasks = { background: null, face: null };
-let aiLoaded = false;
+let isDrawing = false;
+let lastPointerPos = null;
+let cloneSource = null;
+let aiMasks = { bg: null, face: null };
 
-// --- Initialization ---
+// History State
+const MAX_HISTORY = 10;
+let history = [];
+let historyIndex = -1;
 
-async function initAIModels() {
-    try {
-        const vision = await import('./lib/vision_bundle.js');
-        const { FilesetResolver, ImageSegmenter, FaceLandmarker } = vision;
-        
-        DOM.loadingOverlay.classList.remove('hidden');
-        DOM.loadingText.textContent = 'Cargando modelos de IA locales...';
-        
-        // Usar los archivos WebAssembly locales
-        const visionResolver = await FilesetResolver.forVisionTasks("./wasm/");
-
-        // Usar el modelo local selfie_segmenter
-        imageSegmenter = await ImageSegmenter.createFromOptions(visionResolver, {
-            baseOptions: {
-                modelAssetPath: "./models/selfie_segmenter.tflite",
-                delegate: "GPU"
-            },
-            outputCategoryMask: true,
-            outputConfidenceMasks: false
-        });
-
-        // Usar el modelo local face_landmarker
-        faceLandmarker = await FaceLandmarker.createFromOptions(visionResolver, {
-            baseOptions: {
-                modelAssetPath: "./models/face_landmarker.task",
-                delegate: "GPU"
-            },
-            outputFaceBlendshapes: false,
-            runningMode: "IMAGE",
-            numFaces: 1
-        });
-
-        console.log("Modelos locales cargados");
-        aiLoaded = true;
-        DOM.loadingOverlay.classList.add('hidden');
-    } catch (e) {
-        console.warn("Error al cargar modelos IA (probablemente abierto desde file:// sin servidor):", e);
-        DOM.aiWarning.classList.remove('hidden');
-        DOM.loadingOverlay.classList.add('hidden');
+function saveState() {
+    if (!originalImageData) return;
+    
+    // If we are not at the end of the history, truncate the future
+    if (historyIndex < history.length - 1) {
+        history = history.slice(0, historyIndex + 1);
     }
+    
+    const copy = new ImageData(
+        new Uint8ClampedArray(originalImageData.data),
+        originalImageData.width,
+        originalImageData.height
+    );
+    
+    history.push(copy);
+    if (history.length > MAX_HISTORY) {
+        history.shift();
+    } else {
+        historyIndex++;
+    }
+    updateHistoryUI();
 }
 
-// Start loading models in background
-initAIModels();
+function updateHistoryUI() {
+    DOM.btnUndo.disabled = historyIndex <= 0;
+    DOM.btnRedo.disabled = historyIndex >= history.length - 1;
+    DOM.btnResetImg.disabled = history.length <= 1;
+}
 
+function restoreState(index) {
+    const state = history[index];
+    originalImageData = new ImageData(
+        new Uint8ClampedArray(state.data),
+        state.width,
+        state.height
+    );
+    applyAdjustments();
+    updateHistoryUI();
+}
+
+DOM.btnUndo.addEventListener('click', () => {
+    if (historyIndex > 0) {
+        historyIndex--;
+        restoreState(historyIndex);
+    }
+});
+DOM.btnRedo.addEventListener('click', () => {
+    if (historyIndex < history.length - 1) {
+        historyIndex++;
+        restoreState(historyIndex);
+    }
+});
+DOM.btnResetImg.addEventListener('click', () => {
+    if (history.length > 0 && confirm('¿Estás seguro de restablecer la imagen a su estado original?')) {
+        historyIndex = 0;
+        restoreState(historyIndex);
+        saveState(); // Guardar este restablecimiento como una nueva acción
+    }
+});
 
 // --- Image Loading ---
 
@@ -215,6 +236,14 @@ async function finishLoading() {
     DOM.cropOverlay.classList.add('hidden');
     if (currentTool === 'crop') toggleTool('crop');
     
+    // Setup history
+    originalImageData = ctx.getImageData(0, 0, DOM.mainCanvas.width, DOM.mainCanvas.height);
+    currentImageData = ctx.getImageData(0, 0, DOM.mainCanvas.width, DOM.mainCanvas.height);
+    history = [];
+    historyIndex = -1;
+    saveState();
+    DOM.historyActions.classList.remove('hidden');
+
     if (aiLoaded) {
         // Mostrar cargador y permitir que la interfaz se repinte antes de bloquear con IA
         DOM.loadingOverlay.classList.remove('hidden');
@@ -300,7 +329,11 @@ function resetAdjustments() {
     DOM.sBrightness.value = 0;
     DOM.sContrast.value = 0;
     DOM.sTemp.value = 0;
-    DOM.sBW.checked = false;
+    DOM.sBlackPoint.value = 0;
+    DOM.sWhites.value = 0;
+    DOM.sClarity.value = 0;
+    DOM.sHaze.value = 0;
+    DOM.sBeauty.value = 0;
     DOM.sWrinkles.value = 0;
     DOM.sBlur.value = 0;
     updateDisplayValues();
@@ -310,6 +343,11 @@ function updateDisplayValues() {
     DOM.vBrightness.textContent = DOM.sBrightness.value;
     DOM.vContrast.textContent = DOM.sContrast.value;
     DOM.vTemp.textContent = DOM.sTemp.value;
+    DOM.vBlackPoint.textContent = DOM.sBlackPoint.value;
+    DOM.vWhites.textContent = DOM.sWhites.value;
+    DOM.vClarity.textContent = DOM.sClarity.value;
+    DOM.vHaze.textContent = DOM.sHaze.value;
+    DOM.vBeauty.textContent = DOM.sBeauty.value + '%';
     DOM.vWrinkles.textContent = DOM.sWrinkles.value + '%';
     DOM.vBlur.textContent = DOM.sBlur.value + '%';
     DOM.vBrushSize.textContent = DOM.sBrushSize.value + 'px';
@@ -321,14 +359,18 @@ function applyAdjustments() {
     const brightness = parseInt(DOM.sBrightness.value);
     const contrast = parseInt(DOM.sContrast.value);
     const temp = parseInt(DOM.sTemp.value);
-    const isBW = DOM.sBW.checked;
+    const blackPt = parseInt(DOM.sBlackPoint.value);
+    const whitePt = parseInt(DOM.sWhites.value);
     const blurAmt = parseInt(DOM.sBlur.value);
     const wrinklesAmt = parseInt(DOM.sWrinkles.value);
+    const beautyAmt = parseInt(DOM.sBeauty.value);
+    const clarity = parseInt(DOM.sClarity.value);
+    const haze = parseInt(DOM.sHaze.value);
 
     const outData = new ImageData(
-        new Uint8ClampedArray(currentImageData.data),
-        currentImageData.width,
-        currentImageData.height
+        new Uint8ClampedArray(originalImageData.data),
+        originalImageData.width,
+        originalImageData.height
     );
     const data = outData.data;
     const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
@@ -341,22 +383,75 @@ function applyAdjustments() {
         r = factor * (r - 128) + 128;
         g = factor * (g - 128) + 128;
         b = factor * (b - 128) + 128;
-
-        if (temp > 0) { r += temp; b -= temp/2; } 
-        else if (temp < 0) { b -= temp; r += temp/2; }
-
-        if (isBW) {
-            const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-            r = g = b = gray;
+        
+        // Punto Negro y Blancos
+        if (blackPt !== 0) {
+            r = r - blackPt * ((255 - r) / 255);
+            g = g - blackPt * ((255 - g) / 255);
+            b = b - blackPt * ((255 - b) / 255);
         }
+        if (whitePt !== 0) {
+            r = r + whitePt * (r / 255);
+            g = g + whitePt * (g / 255);
+            b = b + whitePt * (b / 255);
+        }
+
+        // Temperatura
+        r += temp;
+        b -= temp;
 
         data[i] = r; data[i+1] = g; data[i+2] = b;
     }
     
     ctx.putImageData(outData, 0, 0);
     
+    // Claridad y Neblina (post-procesado con ctx.filter y blend modes)
+    if (clarity !== 0 || haze !== 0) {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = ctx.canvas.width;
+        tempCanvas.height = ctx.canvas.height;
+        const tCtx = tempCanvas.getContext('2d');
+        tCtx.drawImage(ctx.canvas, 0, 0);
+
+        // 1. Neblina (Haze/Dehaze)
+        if (haze !== 0) {
+            if (haze > 0) {
+                // Dehaze: overlay increases contrast and saturation
+                ctx.globalCompositeOperation = 'overlay';
+                ctx.globalAlpha = haze / 100;
+                ctx.drawImage(tempCanvas, 0, 0);
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.globalAlpha = 1.0;
+                tCtx.drawImage(ctx.canvas, 0, 0);
+            } else {
+                // Haze: white/grey semi-transparent layer
+                ctx.fillStyle = `rgba(220, 225, 230, ${Math.abs(haze) / 100})`;
+                ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                tCtx.drawImage(ctx.canvas, 0, 0);
+            }
+        }
+
+        // 2. Claridad
+        if (clarity !== 0) {
+            if (clarity > 0) {
+                // Sharpen (via SVG filter)
+                const amt = clarity / 25.0; 
+                const matrix = `0 ${-amt} 0 ${-amt} ${1 + 4*amt} ${-amt} 0 ${-amt} 0`;
+                const matrixEl = document.getElementById('sharpen-matrix');
+                if (matrixEl) matrixEl.setAttribute('kernelMatrix', matrix);
+                ctx.filter = 'url(#sharpen-filter)';
+            } else {
+                // Blur
+                const bAmt = Math.abs(clarity) / 10;
+                ctx.filter = `blur(${bAmt}px)`;
+            }
+            ctx.drawImage(tempCanvas, 0, 0);
+            ctx.filter = 'none';
+        }
+    }
+
     if (blurAmt > 0 && aiMasks.background) applyBackgroundBlur(blurAmt);
-    if (wrinklesAmt > 0 && aiMasks.face) applyFaceSmooth(wrinklesAmt);
+    if ((wrinklesAmt > 0 || beautyAmt > 0) && aiMasks.face) applyFaceEnhancements(wrinklesAmt, beautyAmt);
 }
 
 function applyBackgroundBlur(amount) {
@@ -384,7 +479,7 @@ function applyBackgroundBlur(amount) {
     ctx.putImageData(currentFrame, 0, 0);
 }
 
-function applyFaceSmooth(amount) {
+function applyFaceEnhancements(wrinklesAmt, beautyAmt) {
     if (!aiMasks.face) return;
     const landmarks = aiMasks.face;
     let minX = 1, minY = 1, maxX = 0, maxY = 0;
@@ -410,7 +505,12 @@ function applyFaceSmooth(amount) {
     tempCanvas.width = w; tempCanvas.height = h;
     const tCtx = tempCanvas.getContext('2d');
     
-    tCtx.filter = `blur(${amount / 10}px)`;
+    const blurPx = (wrinklesAmt / 10) + (beautyAmt / 20);
+    const br = 100 + (beautyAmt / 5);
+    const ct = 100 + (beautyAmt / 10);
+    const sat = 100 + (beautyAmt / 10);
+    tCtx.filter = `blur(${blurPx}px) brightness(${br}%) contrast(${ct}%) saturate(${sat}%)`;
+    
     tCtx.drawImage(ctx.canvas, 0, 0);
     
     const currentFrame = ctx.getImageData(0,0,w,h);
@@ -424,7 +524,7 @@ function applyFaceSmooth(amount) {
             const dx = cx_i - cx, dy = cy_i - cy;
             if ((dx*dx)/(rx*rx) + (dy*dy)/(ry*ry) <= 1) {
                 const px = (cy_i * w + cx_i) * 4;
-                const alpha = amount / 100;
+                const alpha = Math.max(wrinklesAmt, beautyAmt) / 100;
                 currentFrame.data[px] = currentFrame.data[px]*(1-alpha) + blurredFrame.data[px]*alpha;
                 currentFrame.data[px+1] = currentFrame.data[px+1]*(1-alpha) + blurredFrame.data[px+1]*alpha;
                 currentFrame.data[px+2] = currentFrame.data[px+2]*(1-alpha) + blurredFrame.data[px+2]*alpha;
@@ -434,7 +534,7 @@ function applyFaceSmooth(amount) {
     ctx.putImageData(currentFrame, 0, 0);
 }
 
-[DOM.sBrightness, DOM.sContrast, DOM.sTemp, DOM.sBW, DOM.sWrinkles, DOM.sBlur].forEach(el => {
+[DOM.sBrightness, DOM.sContrast, DOM.sTemp, DOM.sBlackPoint, DOM.sWhites, DOM.sWrinkles, DOM.sBlur, DOM.sClarity, DOM.sHaze, DOM.sBeauty].forEach(el => {
     el.addEventListener('input', () => { updateDisplayValues(); applyAdjustments(); });
 });
 
@@ -454,14 +554,17 @@ function getMousePos(evt, relativeTo = DOM.mainCanvas) {
 }
 
 DOM.btnClone.addEventListener('click', () => toggleTool('clone'));
-DOM.btnIlluminate.addEventListener('click', () => toggleTool('illuminate'));
 DOM.btnCrop.addEventListener('click', () => toggleTool('crop'));
+
+DOM.btnSetCloneSource.addEventListener('click', () => {
+    cloneSource = null;
+    alert("Haz clic o arrastra sobre la foto para fijar el nuevo origen de clonación.");
+});
 
 function toggleTool(tool) {
     if (currentTool === tool) {
         currentTool = null;
         DOM.btnClone.classList.remove('active');
-        DOM.btnIlluminate.classList.remove('active');
         DOM.btnCrop.classList.remove('active');
         DOM.brushSettings.classList.add('hidden');
         DOM.cropSettings.classList.add('hidden');
@@ -471,7 +574,6 @@ function toggleTool(tool) {
     } else {
         currentTool = tool;
         DOM.btnClone.classList.toggle('active', tool === 'clone');
-        DOM.btnIlluminate.classList.toggle('active', tool === 'illuminate');
         DOM.btnCrop.classList.toggle('active', tool === 'crop');
         
         DOM.brushSettings.classList.toggle('hidden', tool === 'crop');
@@ -531,8 +633,7 @@ function handlePointerDown(e) {
     
     if (currentTool === 'clone' && !cloneSource) {
         cloneSource = pos;
-        alert("Origen de clonación establecido.");
-        return;
+        return; // El usuario acaba de fijar el origen, la clonación empieza en el arrastre
     }
 
     isDrawing = true;
@@ -543,7 +644,9 @@ function handlePointerDown(e) {
 function handlePointerUp() {
     if(isDrawing) {
         isDrawing = false;
-        currentImageData = ctx.getImageData(0, 0, DOM.mainCanvas.width, DOM.mainCanvas.height);
+        // FIx: Actualizar la imagen base para que los deslizadores no borren el dibujo
+        originalImageData = ctx.getImageData(0, 0, DOM.mainCanvas.width, DOM.mainCanvas.height);
+        saveState();
     }
     isDraggingCrop = false;
     dragHandle = null;
@@ -555,14 +658,7 @@ function applyTool(pos) {
     const scaleX = DOM.mainCanvas.width / rect.width;
     const actualSize = size * scaleX;
 
-    if (currentTool === 'illuminate') {
-        ctx.globalCompositeOperation = 'color-dodge';
-        ctx.fillStyle = 'rgba(255,255,255,0.05)';
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, actualSize/2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalCompositeOperation = 'source-over';
-    } else if (currentTool === 'clone' && cloneSource) {
+    if (currentTool === 'clone' && cloneSource) {
         const dx = pos.x - lastPointerPos.x;
         const dy = pos.y - lastPointerPos.y;
         cloneSource.x += dx; cloneSource.y += dy;

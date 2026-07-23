@@ -1,6 +1,20 @@
 # Changelog
 
-Todas las novedades, cambios y correcciones de la aplicación "Difuminar" se documentarán en este archivo.
+Todas las novedades, cambios y correcciones de la aplicación "My Face" se documentarán en este archivo.
+
+## [2.0.0] - 2026-07-23 (Versión V2)
+
+### Gran Actualización (V2)
+- **Claridad y Neblina**: Añadidos controles deslizantes de "Claridad" y "Neblina" para difuminar, enfocar y añadir/quitar efectos atmosféricos, reemplazando la antigua brocha "Iluminar".
+- **IA: Rejuvenecer (Piel Perfecta)**: Nueva función de Inteligencia Artificial que limpia las imperfecciones de la cara, ilumina el rostro y suaviza los tonos de piel automáticamente.
+- **Borrador de Objetos**: Renombrada y mejorada la herramienta "Clonar" a "Borrar Objetos", optimizada para eliminar personas y elementos de la foto (Opción Profesional Offline).
+
+## [1.2.0] - 2026-07-23
+
+### Novedades
+- **Historial de Cambios (Deshacer/Rehacer)**: Añadidos botones en la cabecera para deshacer (hasta 10 pasos), rehacer y restablecer la foto original por completo.
+- **Mejora del Clonador**: Añadido un botón explícito de "Fijar Origen de Clonado" para que no se pierda el origen ni moleste con alertas emergentes. Además, lo clonado ahora se guarda correctamente en la imagen base para que no desaparezca al ajustar los brillos.
+- **Punto Negro y Blancos**: Reemplazado el filtro estricto de "Blanco y Negro" por dos deslizadores profesionales separados: "Punto Negro" (para potenciar o aclarar las sombras) y "Blancos" (para potenciar o rebajar las luces altas).
 
 ### Corregido (1.1.1)
 - **Visibilidad de Herramientas**: Se ha solucionado un error que ocultaba el contenido de las pestañas "IA" y "Herramientas" al pulsarlas.
