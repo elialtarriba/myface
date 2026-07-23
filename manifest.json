@@ -1,6 +1,6 @@
 {
-  "name": "My Face Photo Editor",
-  "short_name": "My Face",
+  "name": "Difuminar Photo Editor",
+  "short_name": "Difuminar",
   "description": "Edición de fotos con IA offline",
   "start_url": "./index.html",
   "display": "standalone",
@@ -8,9 +8,9 @@
   "theme_color": "#6366f1",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "logo1.jpg",
       "sizes": "192x192 512x512",
-      "type": "image/png"
+      "type": "image/jpeg"
     }
   ]
 }

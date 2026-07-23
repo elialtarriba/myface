@@ -41,6 +41,8 @@ const DOM = {
     btnExit: document.getElementById('btn-exit'),
     btnClone: document.getElementById('tool-clone'),
     btnCrop: document.getElementById('tool-crop'),
+    btnCompress: document.getElementById('tool-compress'),
+    btnPng: document.getElementById('tool-png'),
     
     // UI Elements
     themeSelector: document.getElementById('theme-selector'),
@@ -1090,6 +1092,26 @@ DOM.btnCopy.addEventListener('click', async () => {
 });
 
 
+
+if (DOM.btnCompress) {
+    DOM.btnCompress.addEventListener('click', () => {
+        if (!hasImage) return;
+        const link = document.createElement('a');
+        link.download = `difuminar_ligero.jpg`;
+        link.href = DOM.mainCanvas.toDataURL('image/jpeg', 0.6); // 60% quality para reducir peso
+        link.click();
+    });
+}
+
+if (DOM.btnPng) {
+    DOM.btnPng.addEventListener('click', () => {
+        if (!hasImage) return;
+        const link = document.createElement('a');
+        link.download = `difuminar_hd.png`;
+        link.href = DOM.mainCanvas.toDataURL('image/png', 1.0);
+        link.click();
+    });
+}
 
 // --- INPAINTING LOGIC ---
 DOM.btnClearEraser.addEventListener('click', () => {

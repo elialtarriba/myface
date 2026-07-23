@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My Face - IA Photo Editor</title>
+    <title>Difuminar - IA Photo Editor</title>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
@@ -21,10 +21,10 @@
     <!-- Splash Screen -->
     <div id="splash-screen">
         <div class="splash-content">
-            <img src="icon.png?v=3" alt="Logo" class="splash-logo" onerror="this.style.display='none'">
-            <h1 class="splash-title">My Face</h1>
+            <img src="logo1.jpg?v=4" alt="Logo" class="splash-logo" onerror="this.style.display='none'">
+            <h1 class="splash-title">Difuminar</h1>
             <p class="splash-subtitle">IA Photo Editor</p>
-            <div class="splash-version">Versión V3</div>
+            <div class="splash-version">Versión V4</div>
             <p class="splash-hint">Toca la pantalla para empezar</p>
         </div>
     </div>
@@ -33,7 +33,7 @@
         <!-- Top Header -->
         <header class="app-header">
             <div class="logo">
-                <h1>My Face <span style="font-size: 0.6em; color: var(--text-muted); font-weight: 500;">V3</span></h1>
+                <h1>Difuminar <span style="font-size: 0.6em; color: var(--text-muted); font-weight: 500;">V4</span></h1>
             </div>
             
             <div class="history-actions hidden" id="history-actions">
@@ -142,6 +142,8 @@
                 <div class="tool-buttons-grid">
                     <button id="tool-clone" class="tool-btn"><i class="fas fa-eraser"></i><span>Borrar Objetos</span></button>
                     <button id="tool-crop" class="tool-btn"><i class="fas fa-crop-alt"></i><span>Recortar</span></button>
+                    <button id="tool-compress" class="tool-btn"><i class="fas fa-compress-arrows-alt"></i><span>Reducir Peso</span></button>
+                    <button id="tool-png" class="tool-btn"><i class="fas fa-file-image"></i><span>A PNG</span></button>
                 </div>
                 
                 <div id="brush-settings" class="sub-panel hidden">
@@ -190,7 +192,7 @@
                     <button id="btn-copy" class="btn"><i class="fas fa-copy"></i> Copiar</button>
                     <button id="btn-save" class="primary-btn"><i class="fas fa-save"></i> Guardar</button>
                 </div>
-                <button id="btn-exit" class="exit-btn"><img src="icon.png" class="custom-icon" alt="" onerror="this.style.display='none'"> Salir y Borrar</button>
+                <button id="btn-exit" class="exit-btn"><img src="logo1.jpg" class="custom-icon" alt="" onerror="this.style.display='none'"> Salir y Borrar</button>
             </div>
         </section>
 
