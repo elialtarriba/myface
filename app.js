@@ -57,6 +57,23 @@ const DOM = {
 const ctx = DOM.mainCanvas.getContext('2d', { willReadFrequently: true });
 const origCtx = DOM.originalCanvas.getContext('2d');
 
+// Navigation & Tabs
+const navItems = document.querySelectorAll('.nav-item');
+const panels = document.querySelectorAll('.panel-content');
+
+navItems.forEach(item => {
+    item.addEventListener('click', () => {
+        // Remove active class from all
+        navItems.forEach(nav => nav.classList.remove('active'));
+        panels.forEach(panel => panel.classList.remove('active'));
+        
+        // Add active class to clicked
+        item.classList.add('active');
+        const targetId = item.getAttribute('data-target');
+        document.getElementById(targetId).classList.add('active');
+    });
+});
+
 // State
 let img = new Image();
 let originalImageData = null;
