@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Difuminar - Edición de Fotos con IA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Controls -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <h1>Difuminar</h1>
+                <p>IA Photo Editor</p>
+                <div style="margin-top: 12px;">
+                    <select id="theme-selector" class="custom-select" style="font-size: 0.75rem; padding: 5px;">
+                        <option value="dark">Tema Oscuro (Predeterminado)</option>
+                        <option value="pastel-yellow">Pastel: Amarillo</option>
+                        <option value="pastel-pink">Pastel: Rosa</option>
+                        <option value="pastel-green">Pastel: Verde</option>
+                        <option value="pastel-blue">Pastel: Azul</option>
+                        <option value="pastel-brown">Pastel: Marrón Claro</option>
+                        <option value="pastel-gray">Pastel: Gris</option>
+                        <option value="pastel-orange">Pastel: Naranja</option>
+                        <option value="pastel-pistachio">Pastel: Pistacho</option>
+                        <option value="pastel-white">Color Blanquecito</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <label for="image-upload" class="btn primary-btn upload-btn">
+                    <i class="fas fa-upload"></i> Subir Foto
+                </label>
+                <input type="file" id="image-upload" accept="image/png, image/jpeg, image/webp" hidden>
+            </div>
+
+            <div class="tools-scroll-area">
+                <!-- AI Tools -->
+                <div class="control-section">
+                    <h3>Herramientas IA</h3>
+                    <p id="ai-warning" class="hidden" style="color: #ef4444; font-size: 0.8rem; margin-bottom: 10px;">IA desactivada (se requiere un servidor local, ej. http://localhost:3000)</p>
+                    
+                    <div class="control-item">
+                        <div class="label-row">
+                            <label for="ai-wrinkles"><i class="fas fa-magic"></i> Quitar Arrugas</label>
+                            <span class="value-display" id="val-wrinkles">0%</span>
+                        </div>
+                        <input type="range" id="ai-wrinkles" min="0" max="100" value="0">
+                    </div>
+
+                    <div class="control-item">
+                        <div class="label-row">
+                            <label for="ai-blur"><i class="fas fa-image"></i> Difuminar Fondo</label>
+                            <span class="value-display" id="val-blur">0%</span>
+                        </div>
+                        <input type="range" id="ai-blur" min="0" max="100" value="0">
+                    </div>
+                </div>
+
+                <!-- Global Adjustments -->
+                <div class="control-section">
+                    <h3>Ajustes Globales</h3>
+                    
+                    <div class="control-item">
+                        <div class="label-row">
+                            <label for="adj-brightness"><i class="fas fa-sun"></i> Iluminación</label>
+                            <span class="value-display" id="val-brightness">0</span>
+                        </div>
+                        <input type="range" id="adj-brightness" min="-100" max="100" value="0">
+                    </div>
+
+                    <div class="control-item">
+                        <div class="label-row">
+                            <label for="adj-contrast"><i class="fas fa-adjust"></i> Contraste</label>
+                            <span class="value-display" id="val-contrast">0</span>
+                        </div>
+                        <input type="range" id="adj-contrast" min="-100" max="100" value="0">
+                    </div>
+
+                    <div class="control-item">
+                        <div class="label-row">
+                            <label for="adj-temperature"><i class="fas fa-temperature-half"></i> Temperatura</label>
+                            <span class="value-display" id="val-temperature">0</span>
+                        </div>
+                        <input type="range" id="adj-temperature" min="-100" max="100" value="0">
+                    </div>
+
+                    <div class="control-item toggle-item">
+                        <label for="adj-bw"><i class="fas fa-palette"></i> Blanco y Negro</label>
+                        <label class="switch">
+                            <input type="checkbox" id="adj-bw">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Manual Tools -->
+                <div class="control-section">
+                    <h3>Herramientas Manuales</h3>
+                    <div class="tool-buttons" style="flex-wrap: wrap;">
+                        <button id="tool-crop" class="tool-btn" title="Recortar Imagen" style="width: 100%; margin-bottom: 5px;">
+                            <i class="fas fa-crop"></i> Recortar
+                        </button>
+                        <button id="tool-clone" class="tool-btn" title="Tampón de Clonar (Pulsa Alt+Click para origen)">
+                            <i class="fas fa-stamp"></i> Clonar
+                        </button>
+                        <button id="tool-illuminate" class="tool-btn" title="Pincel Iluminador">
+                            <i class="fas fa-paint-brush"></i> Iluminar Obj.
+                        </button>
+                    </div>
+                    
+                    <!-- Crop specific settings (hidden by default) -->
+                    <div id="crop-settings" class="control-item hidden" style="margin-top: 15px;">
+                        <label>Proporción</label>
+                        <select id="crop-ratio" class="custom-select">
+                            <option value="free">Libre</option>
+                            <option value="1">1:1 (Cuadrado)</option>
+                            <option value="1.777">16:9 (Panorámico)</option>
+                            <option value="1.333">4:3 (Estándar)</option>
+                        </select>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button id="btn-apply-crop" class="btn primary-btn"><i class="fas fa-check"></i> Aplicar</button>
+                            <button id="btn-cancel-crop" class="btn"><i class="fas fa-times"></i> Cancelar</button>
+                        </div>
+                    </div>
+
+                    <!-- Brush specific settings (hidden by default) -->
+                    <div id="brush-settings" class="control-item hidden" style="margin-top: 15px;">
+                        <div class="label-row">
+                            <label>Tamaño Pincel</label>
+                            <span class="value-display" id="val-brush-size">20px</span>
+                        </div>
+                        <input type="range" id="brush-size" min="5" max="100" value="20">
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <div style="grid-column: span 2; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); margin-bottom: 5px;">
+                    <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 8px;"><i class="fas fa-file-export"></i> Opciones de Exportación</label>
+                    <select id="export-format" class="custom-select" style="margin-bottom: 10px;">
+                        <option value="image/png">PNG (Sin pérdida, más peso)</option>
+                        <option value="image/jpeg">JPEG (Comprimido)</option>
+                        <option value="image/webp">WebP (Optimizado)</option>
+                    </select>
+                    <div id="export-quality-container" class="hidden">
+                        <div class="label-row">
+                            <label style="font-size: 0.8rem;">Calidad (Menos peso = menor %)</label>
+                            <span class="value-display" id="val-export-quality">80%</span>
+                        </div>
+                        <input type="range" id="export-quality" min="10" max="100" value="80">
+                    </div>
+                </div>
+
+                <button id="btn-compare" class="action-btn">
+                    <i class="fas fa-eye"></i> Comparar
+                </button>
+                <button id="btn-copy" class="action-btn">
+                    <i class="fas fa-copy"></i> Copiar
+                </button>
+                <button id="btn-save" class="action-btn primary-btn">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+                <button id="btn-exit" class="action-btn exit-btn">
+                    <img src="icon.png" alt="Exit Icon" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNOSAyMWgxMGEyIDIgMCAwIDAgMi0ydi0xNGEyIDIgMCAwIDAtMi0ySDlhMiAyIDAgMCAwLTIgMnYzIi8+PHBhdGggZD0iTTE2IDEybC01LTUtNSA1Ii8+PC9zdmc+'" class="custom-icon"> Salir
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Canvas Area -->
+        <main class="workspace">
+            <div id="loading-overlay" class="hidden">
+                <div class="spinner"></div>
+                <p id="loading-text">Procesando...</p>
+            </div>
+            
+            <div class="canvas-container" id="canvas-container">
+                <div class="placeholder-text" id="placeholder-text">
+                    <i class="fas fa-images"></i>
+                    <p>Arrastra una imagen o haz clic en "Subir Foto"</p>
+                </div>
+                <!-- Interactive Canvas layer -->
+                <canvas id="main-canvas"></canvas>
+                <!-- Original image canvas (for comparison) -->
+                <canvas id="original-canvas" class="hidden"></canvas>
+                
+                <!-- Crop Overlay Overlay -->
+                <div id="crop-overlay" class="hidden">
+                    <div id="crop-box">
+                        <div class="crop-handle top-left"></div>
+                        <div class="crop-handle top-right"></div>
+                        <div class="crop-handle bottom-left"></div>
+                        <div class="crop-handle bottom-right"></div>
+                    </div>
+                </div>
+
+                <!-- Cursor for manual tools -->
+                <div id="tool-cursor" class="hidden"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Script loading without type=module to prevent complete breakage on file:// -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(reg => {
+                    console.log('Service Worker registrado', reg.scope);
+                }).catch(err => {
+                    console.warn('Service Worker falló (posiblemente abierto con doble clic)', err);
+                });
+            });
+        }
+    </script>
+    <script src="app.js"></script>
+</body>
+</html>

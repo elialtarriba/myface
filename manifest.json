@@ -1,0 +1,16 @@
+{
+  "name": "Difuminar Photo Editor",
+  "short_name": "Difuminar",
+  "description": "Edición de fotos con IA offline",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png"
+    }
+  ]
+}
