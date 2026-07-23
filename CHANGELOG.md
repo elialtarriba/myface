@@ -2,6 +2,12 @@
 
 Todas las novedades, cambios y correcciones de la aplicación "Difuminar" se documentarán en este archivo.
 
+### Corregido (1.1.1)
+- **Visibilidad de Herramientas**: Se ha solucionado un error que ocultaba el contenido de las pestañas "IA" y "Herramientas" al pulsarlas.
+- **Compactación de Paneles**: Se ha reducido el tamaño y márgenes del panel flotante para que no tape la fotografía.
+- **Diseño Diáfano**: Se ha eliminado el recuadro "fantasma" que aparecía al lado del texto "Sube una foto".
+- **Animación de Inicio**: Se ha añadido el logotipo flotante animado a la pantalla de bienvenida.
+
 ## [1.1.0] - 2026-07-23
 
 ### Rediseño Total

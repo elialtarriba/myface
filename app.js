@@ -39,6 +39,7 @@ const DOM = {
     loadingOverlay: document.getElementById('loading-overlay'),
     loadingText: document.getElementById('loading-text'),
     aiWarning: document.getElementById('ai-warning'),
+    logoTitle: document.querySelector('.logo h1'),
     
     // Crop Elements
     cropOverlay: document.getElementById('crop-overlay'),
@@ -60,19 +61,43 @@ const origCtx = DOM.originalCanvas.getContext('2d');
 // Navigation & Tabs
 const navItems = document.querySelectorAll('.nav-item');
 const panels = document.querySelectorAll('.panel-content');
+const toolPanelsContainer = document.querySelector('.tool-panels');
 
 navItems.forEach(item => {
     item.addEventListener('click', () => {
+        const isActive = item.classList.contains('active');
+        
         // Remove active class from all
         navItems.forEach(nav => nav.classList.remove('active'));
         panels.forEach(panel => panel.classList.remove('active'));
         
-        // Add active class to clicked
-        item.classList.add('active');
-        const targetId = item.getAttribute('data-target');
-        document.getElementById(targetId).classList.add('active');
+        if (isActive) {
+            // If it was already active, we just close the whole panel container
+            toolPanelsContainer.classList.add('closed');
+        } else {
+            // Otherwise, open the panel container and activate the clicked tab
+            toolPanelsContainer.classList.remove('closed');
+            item.classList.add('active');
+            const targetId = item.getAttribute('data-target');
+            document.getElementById(targetId).classList.add('active');
+        }
     });
 });
+
+// App Reset (Home Button & Exit Button)
+function resetApp() {
+    if (hasImage) {
+        if (confirm('¿Seguro que quieres borrar la foto actual y volver al inicio?')) {
+            location.reload();
+        }
+    } else {
+        location.reload();
+    }
+}
+DOM.logoTitle.addEventListener('click', resetApp);
+if (DOM.btnExit) {
+    DOM.btnExit.addEventListener('click', resetApp);
+}
 
 // State
 let img = new Image();
@@ -783,12 +808,4 @@ DOM.btnCopy.addEventListener('click', async () => {
     }
 });
 
-DOM.btnExit.addEventListener('click', () => {
-    hasImage = false;
-    DOM.canvasContainer.classList.remove('has-image');
-    DOM.placeholder.classList.remove('hidden');
-    ctx.clearRect(0,0, DOM.mainCanvas.width, DOM.mainCanvas.height);
-    origCtx.clearRect(0,0, DOM.originalCanvas.width, DOM.originalCanvas.height);
-    resetAdjustments();
-    if(currentTool) toggleTool(currentTool);
-});
+

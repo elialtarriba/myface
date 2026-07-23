@@ -14,6 +14,7 @@
     <!-- Splash Screen -->
     <div id="splash-screen">
         <div class="splash-content">
+            <img src="icon.png" alt="Logo" class="splash-logo" onerror="this.style.display='none'">
             <h1 class="splash-title">Difuminar</h1>
             <p class="splash-subtitle">IA Photo Editor</p>
             <div class="splash-version">Versión V1</div>
@@ -95,7 +96,7 @@
             </div>
 
             <!-- TAB: IA -->
-            <div id="panel-ia" class="panel-content hidden">
+            <div id="panel-ia" class="panel-content">
                 <div id="ai-warning" class="hidden" style="color: #ef4444; font-size: 0.85rem; margin-bottom: 10px; text-align: center;">IA desactivada (se requiere un servidor local o PWA instalada).</div>
                 <div class="control-item">
                     <div class="label-row"><span><i class="fas fa-magic"></i> Quitar Arrugas</span><span class="value-display" id="val-wrinkles">0%</span></div>
@@ -108,7 +109,7 @@
             </div>
 
             <!-- TAB: HERRAMIENTAS -->
-            <div id="panel-herramientas" class="panel-content hidden">
+            <div id="panel-herramientas" class="panel-content">
                 <div class="tool-buttons-grid">
                     <button id="tool-crop" class="tool-btn"><i class="fas fa-crop-alt"></i> Recortar</button>
                     <button id="tool-clone" class="tool-btn"><i class="fas fa-clone"></i> Clonar</button>
@@ -136,7 +137,7 @@
             </div>
 
             <!-- TAB: EXPORTAR -->
-            <div id="panel-exportar" class="panel-content hidden">
+            <div id="panel-exportar" class="panel-content">
                 <div class="export-options">
                     <div class="control-item">
                         <div class="label-row"><span>Formato</span></div>
