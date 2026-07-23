@@ -24,7 +24,7 @@
             <img src="icon.png?v=3" alt="Logo" class="splash-logo" onerror="this.style.display='none'">
             <h1 class="splash-title">My Face</h1>
             <p class="splash-subtitle">IA Photo Editor</p>
-            <div class="splash-version">Versión V2</div>
+            <div class="splash-version">Versión V3</div>
             <p class="splash-hint">Toca la pantalla para empezar</p>
         </div>
     </div>
@@ -33,7 +33,7 @@
         <!-- Top Header -->
         <header class="app-header">
             <div class="logo">
-                <h1>My Face</h1>
+                <h1>My Face <span style="font-size: 0.6em; color: var(--text-muted); font-weight: 500;">V3</span></h1>
             </div>
             
             <div class="history-actions hidden" id="history-actions">
@@ -153,13 +153,13 @@
                 </div>
                 
                 <div id="crop-settings" class="sub-panel hidden">
-                    <div class="label-row"><span>Proporción</span></div>
-                    <select id="crop-ratio" class="custom-select">
-                        <option value="free">Libre</option>
-                        <option value="1">1:1 (Cuadrado)</option>
-                        <option value="1.777">16:9 (Panorámico)</option>
-                        <option value="1.333">4:3 (Estándar)</option>
-                    </select>
+                    <p style="font-size:0.85rem; margin-bottom:10px; color:var(--text-main); text-align:center;">Proporción de Recorte</p>
+                    <div style="display:flex; justify-content:center; gap:8px; margin-bottom:15px; flex-wrap:wrap;">
+                        <button class="history-btn crop-ratio-btn active" data-ratio="free" style="width:auto; padding:0 10px;">Libre</button>
+                        <button class="history-btn crop-ratio-btn" data-ratio="1" style="width:auto; padding:0 10px;">1:1</button>
+                        <button class="history-btn crop-ratio-btn" data-ratio="1.333" style="width:auto; padding:0 10px;">4:3</button>
+                        <button class="history-btn crop-ratio-btn" data-ratio="1.777" style="width:auto; padding:0 10px;">16:9</button>
+                    </div>
                     <div class="crop-actions">
                         <button id="btn-cancel-crop" class="btn">Cancelar</button>
                         <button id="btn-apply-crop" class="primary-btn">Aplicar</button>

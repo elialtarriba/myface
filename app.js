@@ -71,11 +71,15 @@ const DOM = {
     exportFormat: document.getElementById('export-format'),
     exportQualityContainer: document.getElementById('export-quality-container'),
     exportQuality: document.getElementById('export-quality'),
-    valExportQuality: document.getElementById('val-export-quality')
+    valExportQuality: document.getElementById('val-export-quality'),
+    maskCanvas: document.getElementById('mask-canvas'),
+    btnApplyEraser: document.getElementById('btn-apply-eraser'),
+    btnClearEraser: document.getElementById('btn-clear-eraser')
 };
 
 const ctx = DOM.mainCanvas.getContext('2d', { willReadFrequently: true });
-const origCtx = DOM.originalCanvas.getContext('2d');
+const origCtx = DOM.originalCanvas.getContext('2d', { willReadFrequently: true });
+const maskCtx = DOM.maskCanvas.getContext('2d', { willReadFrequently: true });
 
 // Navigation & Tabs
 const navItems = document.querySelectorAll('.nav-item');
@@ -390,6 +394,8 @@ function setupCanvases() {
     DOM.mainCanvas.height = h;
     DOM.originalCanvas.width = w;
     DOM.originalCanvas.height = h;
+    DOM.maskCanvas.width = w;
+    DOM.maskCanvas.height = h;
     
     origCtx.drawImage(img, 0, 0);
     ctx.drawImage(img, 0, 0);
@@ -811,11 +817,6 @@ function handlePointerMove(e) {
 function handlePointerDown(e) {
     if (currentTool === 'crop' || !currentTool || !hasImage) return;
     const pos = getMousePos(e);
-    
-    if (currentTool === 'clone' && !cloneSource) {
-        cloneSource = { x: pos.x - 40, y: pos.y }; // Auto-fijar origen para que funcione inmediatamente
-    }
-
     isDrawing = true;
     lastPointerPos = pos;
     applyTool(pos);
@@ -824,9 +825,12 @@ function handlePointerDown(e) {
 function handlePointerUp() {
     if(isDrawing) {
         isDrawing = false;
-        // FIx: Actualizar la imagen base para que los deslizadores no borren el dibujo
-        originalImageData = ctx.getImageData(0, 0, DOM.mainCanvas.width, DOM.mainCanvas.height);
-        saveState();
+        // Solo guardamos estado al soltar el ratón si NO es la goma (clone/eraser)
+        // ya que la goma requiere darle al botón "Aplicar Borrado"
+        if (currentTool !== 'clone') {
+            originalImageData = ctx.getImageData(0, 0, DOM.mainCanvas.width, DOM.mainCanvas.height);
+            saveState();
+        }
     }
     isDraggingCrop = false;
     dragHandle = null;
@@ -838,20 +842,15 @@ function applyTool(pos) {
     const scaleX = DOM.mainCanvas.width / rect.width;
     const actualSize = size * scaleX;
 
-    if (currentTool === 'clone' && cloneSource) {
-        const dx = pos.x - lastPointerPos.x;
-        const dy = pos.y - lastPointerPos.y;
-        cloneSource.x += dx; cloneSource.y += dy;
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, actualSize/2, 0, Math.PI * 2);
-        ctx.clip();
-        ctx.drawImage(DOM.mainCanvas, 
-            cloneSource.x - actualSize/2, cloneSource.y - actualSize/2, actualSize, actualSize,
-            pos.x - actualSize/2, pos.y - actualSize/2, actualSize, actualSize
-        );
-        ctx.restore();
+    if (currentTool === 'clone') { // Herramienta Borrador Mágico
+        maskCtx.lineCap = 'round';
+        maskCtx.lineJoin = 'round';
+        maskCtx.lineWidth = actualSize;
+        maskCtx.strokeStyle = 'rgba(255, 0, 0, 0.6)';
+        maskCtx.beginPath();
+        maskCtx.moveTo(lastPointerPos.x, lastPointerPos.y);
+        maskCtx.lineTo(pos.x, pos.y);
+        maskCtx.stroke();
     }
 }
 
@@ -885,10 +884,21 @@ function updateCropBoxUI() {
     DOM.cropBox.style.height = cropRect.h + 'px';
 }
 
+let currentCropRatio = 'free';
+
+document.querySelectorAll('.crop-ratio-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.crop-ratio-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        currentCropRatio = e.target.getAttribute('data-ratio');
+        enforceCropRatio();
+        updateCropBoxUI();
+    });
+});
+
 function enforceCropRatio() {
-    const ratio = DOM.cropRatio.value;
-    if (ratio === 'free') return;
-    const targetRatio = parseFloat(ratio);
+    if (currentCropRatio === 'free') return;
+    const targetRatio = parseFloat(currentCropRatio);
     
     // adjust height based on width
     cropRect.h = cropRect.w / targetRatio;
@@ -900,11 +910,6 @@ function enforceCropRatio() {
         cropRect.w = cropRect.h * targetRatio;
     }
 }
-
-DOM.cropRatio.addEventListener('change', () => {
-    enforceCropRatio();
-    updateCropBoxUI();
-});
 
 // Dragging Logic for Crop
 function startCropDrag(e) {
@@ -932,7 +937,7 @@ function moveCropDrag(e) {
     cropDragStart = { x: evt.clientX, y: evt.clientY };
     
     const cRect = DOM.mainCanvas.getBoundingClientRect();
-    const ratio = DOM.cropRatio.value;
+    const ratio = currentCropRatio;
     const keepRatio = ratio !== 'free';
     const targetRatio = keepRatio ? parseFloat(ratio) : null;
 
@@ -1085,3 +1090,115 @@ DOM.btnCopy.addEventListener('click', async () => {
 });
 
 
+
+// --- INPAINTING LOGIC ---
+DOM.btnClearEraser.addEventListener('click', () => {
+    maskCtx.clearRect(0, 0, DOM.maskCanvas.width, DOM.maskCanvas.height);
+});
+
+DOM.btnApplyEraser.addEventListener('click', () => {
+    const w = DOM.mainCanvas.width;
+    const h = DOM.mainCanvas.height;
+    if(w === 0 || h === 0) return;
+    
+    DOM.loadingOverlay.classList.remove('hidden');
+    DOM.loadingText.textContent = "Borrando mágicamente...";
+    
+    setTimeout(() => {
+        applyInpainting(w, h);
+        DOM.loadingOverlay.classList.add('hidden');
+    }, 50);
+});
+
+function applyInpainting(w, h) {
+    const maskImgData = maskCtx.getImageData(0, 0, w, h);
+    const mainImgData = ctx.getImageData(0, 0, w, h);
+    const maskData = maskImgData.data;
+    const data = mainImgData.data;
+    
+    let toFill = [];
+    let m = new Uint8Array(w * h);
+    for(let i=0; i<w*h; i++) {
+        if(maskData[i*4 + 3] > 50) { 
+            m[i] = 1;
+            toFill.push(i);
+        }
+    }
+    
+    if(toFill.length === 0) return;
+    
+    const neighbors = [-1, 1, -w, w, -w-1, -w+1, w-1, w+1];
+    const tempData = new Uint8ClampedArray(data);
+    
+    // Onion-peeling inpaint
+    for(let pass=0; pass < 80; pass++) {
+        let changed = false;
+        let borderPixels = [];
+        for(let i=0; i<toFill.length; i++) {
+            let idx = toFill[i];
+            if(m[idx] === 0) continue;
+            
+            let r=0, g=0, b=0, count=0;
+            for(let d of neighbors) {
+                let nIdx = idx + d;
+                if(nIdx >= 0 && nIdx < w*h && m[nIdx] === 0) {
+                    if(Math.abs((nIdx%w) - (idx%w)) <= 1) {
+                        r += data[nIdx*4];
+                        g += data[nIdx*4+1];
+                        b += data[nIdx*4+2];
+                        count++;
+                    }
+                }
+            }
+            if (count > 0) {
+                tempData[idx*4] = r/count;
+                tempData[idx*4+1] = g/count;
+                tempData[idx*4+2] = b/count;
+                borderPixels.push(idx);
+                changed = true;
+            }
+        }
+        
+        for(let idx of borderPixels) {
+            data[idx*4] = tempData[idx*4];
+            data[idx*4+1] = tempData[idx*4+1];
+            data[idx*4+2] = tempData[idx*4+2];
+            m[idx] = 0;
+        }
+        
+        if(!changed) break;
+    }
+    
+    // Smoothing pass
+    for(let pass=0; pass<3; pass++) {
+        for(let i=0; i<toFill.length; i++) {
+            let idx = toFill[i];
+            let r=0, g=0, b=0, count=0;
+            for(let d of neighbors) {
+                let nIdx = idx + d;
+                if(nIdx >= 0 && nIdx < w*h && Math.abs((nIdx%w) - (idx%w)) <= 1) {
+                    r += data[nIdx*4];
+                    g += data[nIdx*4+1];
+                    b += data[nIdx*4+2];
+                    count++;
+                }
+            }
+            if (count > 0) {
+                tempData[idx*4] = r/count;
+                tempData[idx*4+1] = g/count;
+                tempData[idx*4+2] = b/count;
+            }
+        }
+        for(let i=0; i<toFill.length; i++) {
+            let idx = toFill[i];
+            data[idx*4] = tempData[idx*4];
+            data[idx*4+1] = tempData[idx*4+1];
+            data[idx*4+2] = tempData[idx*4+2];
+        }
+    }
+
+    ctx.putImageData(mainImgData, 0, 0);
+    maskCtx.clearRect(0, 0, w, h);
+    originalImageData = ctx.getImageData(0, 0, w, h);
+    saveState();
+}
