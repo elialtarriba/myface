@@ -1,4 +1,4 @@
-const CACHE_NAME = 'difuminar-v1';
+const CACHE_NAME = 'difuminar-v2';
 const ASSETS = [
     './',
     './index.html',
@@ -23,6 +23,7 @@ self.addEventListener('install', event => {
             );
         })
     );
+    self.skipWaiting();
 });
 
 self.addEventListener('fetch', event => {
@@ -49,4 +50,5 @@ self.addEventListener('activate', event => {
             );
         })
     );
+    self.clients.claim();
 });
