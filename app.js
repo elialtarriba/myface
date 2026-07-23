@@ -1,4 +1,4 @@
-import { FilesetResolver, ImageSegmenter, FaceLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/+esm';
+// No static import
 
 const DOM = {
     upload: document.getElementById('image-upload'),
@@ -152,6 +152,8 @@ let faceLandmarker = null;
 
 async function initAI() {
     try {
+        const { FilesetResolver, ImageSegmenter, FaceLandmarker } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/+esm');
+        
         const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
         
         imageSegmenter = await ImageSegmenter.createFromOptions(vision, {
@@ -347,6 +349,11 @@ async function finishLoading() {
     historyIndex = -1;
     saveState();
     DOM.historyActions.classList.remove('hidden');
+    
+    DOM.btnCompare.classList.remove('hidden');
+    
+    // Mostrar primer tab
+    document.querySelector('.nav-item[data-target="panel-ajustes"]').click();
 
     if (aiLoaded) {
         // Mostrar cargador y permitir que la interfaz se repinte antes de bloquear con IA
