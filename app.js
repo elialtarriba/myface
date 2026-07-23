@@ -1,3 +1,5 @@
+import { FilesetResolver, ImageSegmenter, FaceLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3';
+
 const DOM = {
     upload: document.getElementById('image-upload'),
     canvasContainer: document.getElementById('canvas-container'),
@@ -141,6 +143,37 @@ let currentTool = null;
 let aiLoaded = false;
 let imageSegmenter = null;
 let faceLandmarker = null;
+
+async function initAI() {
+    try {
+        const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
+        
+        imageSegmenter = await ImageSegmenter.createFromOptions(vision, {
+            baseOptions: {
+                modelAssetPath: "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite",
+                delegate: "GPU"
+            },
+            runningMode: "IMAGE",
+            outputCategoryMask: true,
+            outputConfidenceMasks: false
+        });
+        
+        faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+            baseOptions: {
+                modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task",
+                delegate: "GPU"
+            },
+            runningMode: "IMAGE",
+            numFaces: 1
+        });
+        aiLoaded = true;
+        console.log("IA Inicializada Correctamente");
+    } catch (e) {
+        console.error("Error inicializando IA:", e);
+    }
+}
+initAI();
+
 let isDrawing = false;
 let lastPointerPos = null;
 let cloneSource = null;
