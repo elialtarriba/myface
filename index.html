@@ -7,7 +7,7 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=4">
+    <link rel="stylesheet" href="style.css?v=6">
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
@@ -24,7 +24,7 @@
             <img src="logo1.jpg?v=4" alt="Logo" class="splash-logo" onerror="this.style.display='none'">
             <h1 class="splash-title">Difuminar</h1>
             <p class="splash-subtitle">IA Photo Editor</p>
-            <div class="splash-version">Versión V4</div>
+            <div class="splash-version">Versión V6</div>
             <p class="splash-hint">Toca la pantalla para empezar</p>
         </div>
     </div>
@@ -33,7 +33,7 @@
         <!-- Top Header -->
         <header class="app-header">
             <div class="logo">
-                <h1>Difuminar <span style="font-size: 0.6em; color: var(--text-muted); font-weight: 500;">V4</span></h1>
+                <h1>Difuminar <span style="font-size: 0.6em; color: var(--text-muted); font-weight: 500;">V6</span></h1>
             </div>
             
             <div class="history-actions hidden" id="history-actions">
@@ -147,8 +147,9 @@
                 </div>
                 
                 <div id="brush-settings" class="sub-panel hidden">
-                    <div id="clone-settings" class="hidden" style="margin-bottom: 15px;">
-                        <button id="btn-set-clone-source" class="btn primary-btn" style="font-size: 0.75rem; padding: 8px;"><i class="fas fa-crosshairs"></i> Fijar Origen de Clonado</button>
+                    <div id="eraser-settings" style="margin-bottom: 15px;">
+                        <button id="btn-apply-eraser" class="btn primary-btn" style="width: 100%; font-size: 0.85rem; padding: 10px; margin-bottom: 8px; background: var(--accent-color);"><i class="fas fa-magic"></i> Aplicar Borrado</button>
+                        <button id="btn-clear-eraser" class="btn" style="width: 100%; font-size: 0.85rem; padding: 10px;"><i class="fas fa-times"></i> Descartar Selección</button>
                     </div>
                     <div class="label-row"><span>Tamaño Pincel</span><span class="value-display" id="val-brush-size">20px</span></div>
                     <input type="range" id="brush-size" min="5" max="100" value="20">

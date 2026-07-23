@@ -1,4 +1,4 @@
-import { FilesetResolver, ImageSegmenter, FaceLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3';
+import { FilesetResolver, ImageSegmenter, FaceLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/+esm';
 
 const DOM = {
     upload: document.getElementById('image-upload'),
@@ -724,7 +724,7 @@ function applyFaceEnhancementsFallback(wrinklesAmt, beautyAmt) {
 }
 
 [DOM.sBrightness, DOM.sContrast, DOM.sTemp, DOM.sBlackPoint, DOM.sWhites, DOM.sWrinkles, DOM.sBlur, DOM.sClarity, DOM.sHaze, DOM.sBeauty].forEach(el => {
-    el.addEventListener('input', () => { updateDisplayValues(); applyAdjustments(); });
+    if (el) el.addEventListener('input', () => { updateDisplayValues(); applyAdjustments(); });
 });
 
 // --- Manual Tools & Crop ---
@@ -745,10 +745,12 @@ function getMousePos(evt, relativeTo = DOM.mainCanvas) {
 DOM.btnClone.addEventListener('click', () => toggleTool('clone'));
 DOM.btnCrop.addEventListener('click', () => toggleTool('crop'));
 
-DOM.btnSetCloneSource.addEventListener('click', () => {
-    cloneSource = null;
-    alert("Haz clic o arrastra sobre la foto para fijar el nuevo origen de clonación.");
-});
+if (DOM.btnSetCloneSource) {
+    DOM.btnSetCloneSource.addEventListener('click', () => {
+        cloneSource = null;
+        alert('Toca en la imagen la zona que quieres copiar.');
+    });
+}
 
 function toggleTool(tool) {
     if (currentTool === tool) {
