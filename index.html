@@ -85,9 +85,9 @@
         </main>
 
         <!-- Tool Panels (Bottom Sheets) -->
-        <section class="tool-panels">
+        <section class="tool-panels closed">
             <!-- TAB: AJUSTES -->
-            <div id="panel-ajustes" class="panel-content active">
+            <div id="panel-ajustes" class="panel-content">
                 <div class="control-item">
                     <div class="label-row"><span><i class="fas fa-sun"></i> Brillo</span><span class="value-display" id="val-brightness">0</span></div>
                     <input type="range" id="adj-brightness" min="-100" max="100" value="0">
@@ -194,7 +194,7 @@
 
         <!-- Bottom Navigation Bar -->
         <nav class="bottom-nav">
-            <button class="nav-item active" data-target="panel-ajustes">
+            <button class="nav-item" data-target="panel-ajustes">
                 <i class="fas fa-sliders-h"></i>
                 <span>Ajustes</span>
             </button>
@@ -225,10 +225,21 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').then(reg => {
-                    console.log('Service Worker registrado');
+                navigator.serviceWorker.register('sw.js').then(reg => {
+                    console.log('SW registrado: ', reg.scope);
+                    
+                    // Lógica para recarga automática al detectar nueva versión
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                console.log("Nueva versión detectada. Recargando automáticamente...");
+                                window.location.reload(true);
+                            }
+                        });
+                    });
                 }).catch(err => {
-                    console.warn('Service Worker falló (posiblemente abierto con doble clic)', err);
+                    console.log('SW fallo: ', err);
                 });
             });
             

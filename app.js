@@ -101,6 +101,22 @@ navItems.forEach(item => {
     });
 });
 
+// Swipe down to close panels
+let panelTouchStartY = 0;
+toolPanelsContainer.addEventListener('touchstart', e => {
+    panelTouchStartY = e.touches[0].clientY;
+}, {passive: true});
+
+toolPanelsContainer.addEventListener('touchend', e => {
+    const touchEndY = e.changedTouches[0].clientY;
+    const dy = touchEndY - panelTouchStartY;
+    if (dy > 60) { // Deslizar hacia abajo
+        toolPanelsContainer.classList.add('closed');
+        navItems.forEach(nav => nav.classList.remove('active'));
+        panels.forEach(panel => panel.classList.remove('active'));
+    }
+});
+
 // App Reset (Home Button & Exit Button)
 function resetApp() {
     if (hasImage) {
