@@ -242,6 +242,19 @@
             });
         }
     </script>
-    <script src="app.js?v=3"></script>
+    <!-- Custom Modal para Restablecer -->
+    <div id="reset-modal" class="custom-modal-overlay">
+        <div class="custom-modal">
+            <h3>Restablecer Foto</h3>
+            <p>¿Estás seguro de que quieres borrar todos los cambios y volver a la foto original?</p>
+            <div class="modal-actions">
+                <button id="modal-btn-confirm" class="modal-btn danger">Sí, borrar todo</button>
+                <button id="modal-btn-cancel" class="modal-btn cancel">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="app.js?v=4" type="module"></script>
 </body>
 </html>

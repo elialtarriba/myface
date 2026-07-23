@@ -54,6 +54,9 @@ const DOM = {
     btnRedo: document.getElementById('btn-redo'),
     btnResetImg: document.getElementById('btn-reset-img'),
     btnSetCloneSource: document.getElementById('btn-set-clone-source'),
+    modalReset: document.getElementById('reset-modal'),
+    btnConfirmReset: document.getElementById('modal-btn-confirm'),
+    btnCancelReset: document.getElementById('modal-btn-cancel'),
     
     // Crop Elements
     cropOverlay: document.getElementById('crop-overlay'),
@@ -158,7 +161,23 @@ function saveState() {
 function updateHistoryUI() {
     DOM.btnUndo.disabled = historyIndex <= 0;
     DOM.btnRedo.disabled = historyIndex >= history.length - 1;
-    DOM.btnResetImg.disabled = history.length <= 1;
+    DOM.btnResetImg.disabled = !hasImage;
+}
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playClickSound() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, audioCtx.currentTime); 
+    osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.05);
+    gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.05);
 }
 
 function restoreState(index) {
@@ -174,21 +193,51 @@ function restoreState(index) {
 
 DOM.btnUndo.addEventListener('click', () => {
     if (historyIndex > 0) {
+        playClickSound();
         historyIndex--;
         restoreState(historyIndex);
     }
 });
 DOM.btnRedo.addEventListener('click', () => {
     if (historyIndex < history.length - 1) {
+        playClickSound();
         historyIndex++;
         restoreState(historyIndex);
     }
 });
 DOM.btnResetImg.addEventListener('click', () => {
-    if (history.length > 0 && confirm('¿Estás seguro de restablecer la imagen a su estado original?')) {
+    if (hasImage) {
+        playClickSound();
+        DOM.modalReset.classList.add('active');
+    }
+});
+
+DOM.btnCancelReset.addEventListener('click', () => {
+    DOM.modalReset.classList.remove('active');
+});
+
+DOM.btnConfirmReset.addEventListener('click', () => {
+    DOM.modalReset.classList.remove('active');
+    
+    // Restablecer deslizadores
+    DOM.sBrightness.value = 0;
+    DOM.sContrast.value = 0;
+    DOM.sTemp.value = 0;
+    DOM.sBlackPoint.value = 0;
+    DOM.sWhites.value = 0;
+    DOM.sClarity.value = 0;
+    DOM.sHaze.value = 0;
+    DOM.sBeauty.value = 0;
+    DOM.sWrinkles.value = 0;
+    DOM.sBlur.value = 0;
+    
+    if (history.length > 0) {
         historyIndex = 0;
-        restoreState(historyIndex);
-        saveState(); // Guardar este restablecimiento como una nueva acción
+        restoreState(0);
+        saveState();
+    } else {
+        updateDisplayValues();
+        applyAdjustments();
     }
 });
 
@@ -450,8 +499,14 @@ function applyAdjustments() {
         }
     }
 
-    if (blurAmt > 0 && aiMasks.background) applyBackgroundBlur(blurAmt);
-    if ((wrinklesAmt > 0 || beautyAmt > 0) && aiMasks.face) applyFaceEnhancements(wrinklesAmt, beautyAmt);
+    if (blurAmt > 0) {
+        if (aiMasks.background) applyBackgroundBlur(blurAmt);
+        else applyBackgroundBlurFallback(blurAmt);
+    }
+    if (wrinklesAmt > 0 || beautyAmt > 0) {
+        if (aiMasks.face) applyFaceEnhancements(wrinklesAmt, beautyAmt);
+        else applyFaceEnhancementsFallback(wrinklesAmt, beautyAmt);
+    }
 }
 
 function applyBackgroundBlur(amount) {
@@ -474,6 +529,40 @@ function applyBackgroundBlur(amount) {
             currentFrame.data[px] = blurredFrame.data[px];
             currentFrame.data[px+1] = blurredFrame.data[px+1];
             currentFrame.data[px+2] = blurredFrame.data[px+2];
+        }
+    }
+    ctx.putImageData(currentFrame, 0, 0);
+}
+
+function applyBackgroundBlurFallback(amount) {
+    const w = ctx.canvas.width;
+    const h = ctx.canvas.height;
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = w; tempCanvas.height = h;
+    const tCtx = tempCanvas.getContext('2d');
+    
+    tCtx.filter = `blur(${amount / 5}px)`;
+    tCtx.drawImage(ctx.canvas, 0, 0);
+    
+    const currentFrame = ctx.getImageData(0,0,w,h);
+    const blurredFrame = tCtx.getImageData(0,0,w,h);
+    
+    const cx = w/2, cy = h/2;
+    const maxDist = Math.min(w, h) * 0.8;
+    
+    for (let cy_i = 0; cy_i < h; cy_i++) {
+        for (let cx_i = 0; cx_i < w; cx_i++) {
+            const dx = cx_i - cx, dy = cy_i - cy;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            // Si está lejos del centro (fondo), aplicamos blur
+            if (dist > maxDist * 0.3) {
+                let alpha = (dist - maxDist * 0.3) / (maxDist * 0.4);
+                if (alpha > 1) alpha = 1;
+                const px = (cy_i * w + cx_i) * 4;
+                currentFrame.data[px] = currentFrame.data[px]*(1-alpha) + blurredFrame.data[px]*alpha;
+                currentFrame.data[px+1] = currentFrame.data[px+1]*(1-alpha) + blurredFrame.data[px+1]*alpha;
+                currentFrame.data[px+2] = currentFrame.data[px+2]*(1-alpha) + blurredFrame.data[px+2]*alpha;
+            }
         }
     }
     ctx.putImageData(currentFrame, 0, 0);
@@ -525,6 +614,49 @@ function applyFaceEnhancements(wrinklesAmt, beautyAmt) {
             if ((dx*dx)/(rx*rx) + (dy*dy)/(ry*ry) <= 1) {
                 const px = (cy_i * w + cx_i) * 4;
                 const alpha = Math.max(wrinklesAmt, beautyAmt) / 100;
+                currentFrame.data[px] = currentFrame.data[px]*(1-alpha) + blurredFrame.data[px]*alpha;
+                currentFrame.data[px+1] = currentFrame.data[px+1]*(1-alpha) + blurredFrame.data[px+1]*alpha;
+                currentFrame.data[px+2] = currentFrame.data[px+2]*(1-alpha) + blurredFrame.data[px+2]*alpha;
+            }
+        }
+    }
+    ctx.putImageData(currentFrame, 0, 0);
+}
+
+function applyFaceEnhancementsFallback(wrinklesAmt, beautyAmt) {
+    const w = ctx.canvas.width;
+    const h = ctx.canvas.height;
+    
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = w; tempCanvas.height = h;
+    const tCtx = tempCanvas.getContext('2d');
+    
+    const blurPx = (wrinklesAmt / 10) + (beautyAmt / 20);
+    const br = 100 + (beautyAmt / 5);
+    const ct = 100 + (beautyAmt / 10);
+    const sat = 100 + (beautyAmt / 10);
+    tCtx.filter = `blur(${blurPx}px) brightness(${br}%) contrast(${ct}%) saturate(${sat}%)`;
+    
+    tCtx.drawImage(ctx.canvas, 0, 0);
+    
+    const currentFrame = ctx.getImageData(0,0,w,h);
+    const blurredFrame = tCtx.getImageData(0,0,w,h);
+    
+    // Asumir que la cara está en el centro
+    const cx = w/2, cy = h/2;
+    const rx = w * 0.3, ry = h * 0.4;
+
+    for (let cy_i = 0; cy_i < h; cy_i++) {
+        for (let cx_i = 0; cx_i < w; cx_i++) {
+            const dx = cx_i - cx, dy = cy_i - cy;
+            if ((dx*dx)/(rx*rx) + (dy*dy)/(ry*ry) <= 1) {
+                const px = (cy_i * w + cx_i) * 4;
+                // Fade radial
+                const dist = Math.sqrt((dx*dx)/(rx*rx) + (dy*dy)/(ry*ry));
+                const fade = 1 - dist;
+                const baseAlpha = Math.max(wrinklesAmt, beautyAmt) / 100;
+                const alpha = baseAlpha * fade;
+                
                 currentFrame.data[px] = currentFrame.data[px]*(1-alpha) + blurredFrame.data[px]*alpha;
                 currentFrame.data[px+1] = currentFrame.data[px+1]*(1-alpha) + blurredFrame.data[px+1]*alpha;
                 currentFrame.data[px+2] = currentFrame.data[px+2]*(1-alpha) + blurredFrame.data[px+2]*alpha;
@@ -632,8 +764,7 @@ function handlePointerDown(e) {
     const pos = getMousePos(e);
     
     if (currentTool === 'clone' && !cloneSource) {
-        cloneSource = pos;
-        return; // El usuario acaba de fijar el origen, la clonación empieza en el arrastre
+        cloneSource = { x: pos.x - 40, y: pos.y }; // Auto-fijar origen para que funcione inmediatamente
     }
 
     isDrawing = true;

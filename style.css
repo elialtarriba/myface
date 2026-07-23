@@ -127,23 +127,28 @@ body {
 .history-btn {
     background: var(--panel-bg);
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    width: 32px;
-    height: 32px;
+    border-radius: 8px;
+    width: 40px; 
+    height: 40px;
     display: flex;
     justify-content: center;
     align-items: center;
     color: var(--text-main);
     cursor: pointer;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-    transition: transform 0.1s, opacity 0.2s;
+    /* Efecto 3D */
+    box-shadow: 0 4px 0 rgba(0,0,0,0.2), 0 5px 8px rgba(0,0,0,0.1);
+    transition: all 0.1s;
+    margin-bottom: 4px; /* Espacio para que el botón baje */
+    font-size: 1.1rem;
 }
 .history-btn:disabled {
     opacity: 0.3;
     cursor: not-allowed;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.05);
 }
 .history-btn:active:not(:disabled) {
-    transform: scale(0.9);
+    transform: translateY(4px);
+    box-shadow: 0 0px 0 rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.1);
 }
 #btn-reset-img {
     color: #ef4444;
@@ -189,6 +194,88 @@ body {
 .placeholder-text i {
     font-size: 3rem;
     opacity: 0.5;
+}
+
+/* Fix double tap to zoom in iOS */
+button, a, input, select, textarea, .nav-item {
+    touch-action: manipulation;
+}
+
+/* Custom Modal */
+.custom-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+.custom-modal-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+.custom-modal {
+    background: var(--bg-panel);
+    padding: 30px 20px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    text-align: center;
+    transform: scale(0.9);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-width: 85%;
+    width: 320px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.custom-modal-overlay.active .custom-modal {
+    transform: scale(1);
+}
+.custom-modal h3 {
+    margin-bottom: 10px;
+    font-size: 1.3rem;
+    color: var(--text-main);
+}
+.custom-modal p {
+    font-size: 0.95rem;
+    opacity: 0.8;
+    margin-bottom: 25px;
+    line-height: 1.4;
+    color: var(--text-main);
+}
+.custom-modal .modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.modal-btn {
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 600;
+    font-family: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.modal-btn.danger {
+    background: #ff4757;
+    color: white;
+    box-shadow: 0 4px 10px rgba(255, 71, 87, 0.3);
+}
+.modal-btn.danger:active {
+    transform: scale(0.95);
+}
+.modal-btn.cancel {
+    background: rgba(0,0,0,0.05);
+    color: var(--text-main);
+}
+.modal-btn.cancel:active {
+    background: rgba(0,0,0,0.1);
 }
 
 canvas {
@@ -270,27 +357,27 @@ input[type=range] {
     -webkit-appearance: none;
     width: 100%;
     background: transparent;
-    height: 24px;
+    height: 34px; /* Area táctil más grande */
 }
 input[type=range]:focus {
     outline: none;
 }
 input[type=range]::-webkit-slider-runnable-track {
     width: 100%;
-    height: 6px;
+    height: 8px; /* Más grueso */
     cursor: pointer;
-    background: rgba(0,0,0,0.05);
-    border-radius: 3px;
+    background: rgba(0,0,0,0.1);
+    border-radius: 4px;
 }
 input[type=range]::-webkit-slider-thumb {
-    height: 20px;
-    width: 20px;
+    height: 30px;
+    width: 30px;
     border-radius: 50%;
     background: #fff;
     cursor: pointer;
     -webkit-appearance: none;
-    margin-top: -7px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    margin-top: -11px; /* Centrado con track de 8px */
+    box-shadow: 0 3px 6px rgba(0,0,0,0.25);
     border: 1px solid rgba(0,0,0,0.05);
     transition: transform 0.1s;
 }
