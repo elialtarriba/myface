@@ -1,6 +1,6 @@
 {
-  "name": "Difuminar Photo Editor",
-  "short_name": "Difuminar",
+  "name": "My Face Photo Editor",
+  "short_name": "My Face",
   "description": "Edición de fotos con IA offline",
   "start_url": "./index.html",
   "display": "standalone",
